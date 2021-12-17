@@ -1,0 +1,19 @@
+name: Java CI with Maven # как называется Workflow
+
+on: [push, pull_request] # когда срабатывает (на push и pull_request)
+
+jobs: # какие задачи делаем
+  build: # сборка
+
+    runs-on: ubuntu-latest # на какой ОС запускаем
+
+    steps: # какие шаги выполняем
+      - uses: actions/checkout@v2 # выкачиваем репо
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2 # устанавливаем JDK
+        with:
+          java-version: 11 # версия для установки
+          distribution: 'adopt'
+          cache: maven
+      - name: Build with Maven
+        run: mvn -B -e verify # запускаем Maven до стадии verify

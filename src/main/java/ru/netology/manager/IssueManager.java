@@ -1,12 +1,13 @@
 package ru.netology.manager;
 
 import ru.netology.domain.Issue;
+import ru.netology.domain.NotFoundException;
 import ru.netology.repository.IssueRepository;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class IssueManager {
-  //Добавление необходимыех полей, конструкторов и методов
   private IssueRepository repository;
 
   public IssueManager(IssueRepository repository) { this.repository = repository; }
@@ -19,11 +20,10 @@ public class IssueManager {
 
   //Отображение Issue по статусу - открыт(true)
   public Collection<Issue> displayOpen() {
-    List<Issue> temps = (List<Issue>) repository.findAll();
     List<Issue> result = new ArrayList();
-    for (Issue temp : temps) {
-      if (temp.isStatus()) {
-        result.add(temp);
+    for (Issue tmp : repository.findAll()) {
+      if (tmp.isStatus()) {
+        result.add(tmp);
       }
     }
     return result;
@@ -31,11 +31,21 @@ public class IssueManager {
 
   //Отображение Issue по статусу - закрыт(false)
   public Collection<Issue> displayClose() {
-    List<Issue> temps = (List<Issue>) repository.findAll();
     List<Issue> result = new ArrayList();
-    for (Issue temp : temps) {
-      if (!temp.isStatus()) {
-        result.add(temp);
+    for (Issue tmp : repository.findAll()) {
+      if (!tmp.isStatus()) {
+        result.add(tmp);
+      }
+    }
+    return result;
+  }
+
+  //Внутренний метод фильтрации
+  private Collection<Issue> filterBy(Predicate<Issue> filter) {
+    List<Issue> result = new ArrayList<>();
+    for (Issue tmp : repository.findAll()) {
+      if (filter.test(tmp)) {
+        result.add(tmp);
       }
     }
     return result;
@@ -43,23 +53,17 @@ public class IssueManager {
 
   //Фильтрация Issue по заданному автору
   public Collection<Issue> filterByAuthor(String author) {
-    List<Issue> result = (List<Issue>) repository.findAll();
-    result.removeIf(el -> !Objects.equals(el.getAuthor(), author));
-    return result;
+    return filterBy(issue -> issue.getAuthor().equals(author));
   }
 
   //Фильтрация Issue по заданной метке
   public Collection<Issue> filterByLabel(String label) {
-    List<Issue> result = (List<Issue>) repository.findAll();
-    result.removeIf(el -> !Objects.equals(el.getLabel(), label));
-    return result;
+    return filterBy(issue -> issue.getLabel().contains(label));
   }
 
   //Фильтрация Issue по заданному адресату
   public Collection<Issue> filterByAssignee(String assignee) {
-    List<Issue> results = (List<Issue>) repository.findAll();
-    results.removeIf(el -> !Objects.equals(el.getAssignee(), assignee));
-    return results;
+    return filterBy(issue -> issue.getAssignee().equals(assignee));
   }
 
   //Сортировка Issue по заданному критерию
@@ -69,8 +73,11 @@ public class IssueManager {
     return result;
   }
 
-  //Сортировка Issue по заданному критерию
+  //Открытие или закрытие Issue по заданному id
   public void closingAndOpeningIssueById(int id) {
+    if (repository.findById(id) == null) {
+      throw new NotFoundException("Element with id: " + id + " not found");
+    }
     if (repository.findById(id).isStatus()) {
       repository.findById(id).setStatus(false);
     } else {

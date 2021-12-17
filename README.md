@@ -1,3 +1,274 @@
+# Настройки добавленные в pom.xml для данного проекта
+```xml
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <failIfNoTests>true</failIfNoTests>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.5</version>
+                <executions>
+                    <execution>
+                        <id>agent-Smith</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report-agent-Smith</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.8.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.22</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>3.6.28</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+```
+# Код Java находящийся в этом репозитории
+```Java
+package ru.netology.domain;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Objects;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class Issue implements Comparable<Issue> {
+  private int id;                   //Идентификатор
+  private String name;              //Название
+  private boolean status;           //Статус - открыт(true) или закрыт(false)
+  private String author;            //Автор
+  private String label;             //Метка - тема
+  private String assignee;          //Адресат или правоприемник
+  private int lifetime;             //Время существования в минутах
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Issue issue = (Issue) o;
+    return id == issue.id &&
+            status == issue.status &&
+            lifetime == issue.lifetime &&
+            Objects.equals(name, issue.name) &&
+            Objects.equals(author, issue.author) &&
+            Objects.equals(label, issue.label) &&
+            Objects.equals(assignee, issue.assignee);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, name, status, author, label, assignee, lifetime);
+  }
+
+  @Override
+  public String toString() {
+    return "Issue{" +
+            "id=" + id +
+            ", name='" + name + '\'' +
+            ", close=" + status +
+            ", author='" + author + '\'' +
+            ", label='" + label + '\'' +
+            ", assignee='" + assignee + '\'' +
+            ", lifetime=" + lifetime +
+            '}';
+  }
+
+  @Override
+  public int compareTo(Issue o) {
+    Issue p = (Issue) o;
+    return this.lifetime - p.lifetime;
+  }
+}
+```
+```Java
+package ru.netology.manager;
+
+import ru.netology.domain.Issue;
+import ru.netology.domain.NotFoundException;
+import ru.netology.repository.IssueRepository;
+
+import java.util.*;
+import java.util.function.Predicate;
+
+public class IssueManager {
+  private IssueRepository repository;
+
+  public IssueManager(IssueRepository repository) { this.repository = repository; }
+
+  //Добавление Issue в репозиторий
+  public void add(Issue item) { repository.save(item); }
+
+  //Удаление Issue из репозитория по id
+  public void removeById(int id) { repository.removeById(id); }
+
+  //Отображение Issue по статусу - открыт(true)
+  public Collection<Issue> displayOpen() {
+    List<Issue> result = new ArrayList();
+    for (Issue tmp : repository.findAll()) {
+      if (tmp.isStatus()) {
+        result.add(tmp);
+      }
+    }
+    return result;
+  }
+
+  //Отображение Issue по статусу - закрыт(false)
+  public Collection<Issue> displayClose() {
+    List<Issue> result = new ArrayList();
+    for (Issue tmp : repository.findAll()) {
+      if (!tmp.isStatus()) {
+        result.add(tmp);
+      }
+    }
+    return result;
+  }
+
+  //Внутренний метод фильтрации
+  private Collection<Issue> filterBy(Predicate<Issue> filter) {
+    List<Issue> result = new ArrayList<>();
+    for (Issue tmp : repository.findAll()) {
+      if (filter.test(tmp)) {
+        result.add(tmp);
+      }
+    }
+    return result;
+  }
+
+  //Фильтрация Issue по заданному автору
+  public Collection<Issue> filterByAuthor(String author) {
+    return filterBy(issue -> issue.getAuthor().equals(author));
+  }
+
+  //Фильтрация Issue по заданной метке
+  public Collection<Issue> filterByLabel(String label) {
+    return filterBy(issue -> issue.getLabel().contains(label));
+  }
+
+  //Фильтрация Issue по заданному адресату
+  public Collection<Issue> filterByAssignee(String assignee) {
+    return filterBy(issue -> issue.getAssignee().equals(assignee));
+  }
+
+  //Сортировка Issue по заданному критерию
+  public Collection<Issue> sortBy(Collection<Issue> sort, Comparator<Issue> comparator) {
+    List<Issue> result = (List<Issue>) sort;
+    Collections.sort(result, comparator);
+    return result;
+  }
+
+  //Открытие или закрытие Issue по заданному id
+  public void closingAndOpeningIssueById(int id) {
+    if (repository.findById(id) == null) {
+      throw new NotFoundException("Element with id: " + id + " not found");
+    }
+    if (repository.findById(id).isStatus()) {
+      repository.findById(id).setStatus(false);
+    } else {
+      repository.findById(id).setStatus(true);
+    }
+  }
+}
+```
+```Java
+package ru.netology.repository;
+
+import ru.netology.domain.NotFoundException;
+import ru.netology.domain.Issue;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+public class IssueRepository {
+  private Collection<Issue> items = new ArrayList<>();
+
+  public void save(Issue item) {
+    items.add(item);
+  }
+
+  public Collection<Issue> findAll() {
+    return items;
+  }
+
+  public Issue findById(int id) {
+    for (Issue item : items) {
+      if (item.getId() == id) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  public void removeById(int id) {
+    if (findById(id) == null) {
+      throw new NotFoundException("Element with id: " + id + " not found");
+    }
+    items.removeIf(el -> el.getId() == id);
+  }
+}
+```
+```Java
+package ru.netology.domain;
+
+import java.util.Comparator;
+
+public class OldestComparator implements Comparator<Issue> {
+  public int compare(Issue t1, Issue t2) {
+    return t2.getLifetime() - t1.getLifetime();
+  }
+}
+```
+```Java
+package ru.netology.domain;
+
+public class NotFoundException extends RuntimeException {
+    public NotFoundException(String msg) {
+        super(msg);
+    }
+}
+```
+```Java
 package ru.netology.manager;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -292,3 +563,4 @@ public class IssueManagerTest {
         }
     }
 }
+```

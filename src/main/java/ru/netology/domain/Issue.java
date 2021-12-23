@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 
 @NoArgsConstructor
@@ -14,7 +16,7 @@ public class Issue implements Comparable<Issue> {
   private String name;              //Название
   private boolean status;           //Статус - открыт(true) или закрыт(false)
   private String author;            //Автор
-  private String label;             //Метка - тема
+  private Collection label = new HashSet<String>();  //Метка - тема
   private String assignee;          //Адресат или правоприемник
   private int lifetime;             //Время существования в минутах
 
@@ -42,9 +44,9 @@ public class Issue implements Comparable<Issue> {
     return "Issue{" +
             "id=" + id +
             ", name='" + name + '\'' +
-            ", close=" + status +
+            ", status=" + status +
             ", author='" + author + '\'' +
-            ", label='" + label + '\'' +
+            ", label=" + label +
             ", assignee='" + assignee + '\'' +
             ", lifetime=" + lifetime +
             '}';

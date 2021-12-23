@@ -57,8 +57,8 @@ public class IssueManager {
   }
 
   //Фильтрация Issue по заданной метке
-  public Collection<Issue> filterByLabel(String label) {
-    return filterBy(issue -> issue.getLabel().contains(label));
+  public Collection<Issue> filterByLabel(Collection<String> label) {
+    return filterBy(issue -> issue.getLabel().containsAll(label));
   }
 
   //Фильтрация Issue по заданному адресату
@@ -75,13 +75,14 @@ public class IssueManager {
 
   //Открытие или закрытие Issue по заданному id
   public void closingAndOpeningIssueById(int id) {
-    if (repository.findById(id) == null) {
+    Issue tmp = repository.findById(id);
+    if (tmp == null) {
       throw new NotFoundException("Element with id: " + id + " not found");
     }
-    if (repository.findById(id).isStatus()) {
-      repository.findById(id).setStatus(false);
-    } else {
-      repository.findById(id).setStatus(true);
-    }
+      if (tmp.isStatus()) {
+        repository.findById(id).setStatus(false);
+      } else {
+        repository.findById(id).setStatus(true);
+      }
   }
 }

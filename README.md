@@ -69,6 +69,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
 
 @NoArgsConstructor
@@ -79,7 +81,7 @@ public class Issue implements Comparable<Issue> {
   private String name;              //Название
   private boolean status;           //Статус - открыт(true) или закрыт(false)
   private String author;            //Автор
-  private String label;             //Метка - тема
+  private Collection label = new HashSet<String>();  //Метка - тема
   private String assignee;          //Адресат или правоприемник
   private int lifetime;             //Время существования в минутах
 
@@ -107,9 +109,9 @@ public class Issue implements Comparable<Issue> {
     return "Issue{" +
             "id=" + id +
             ", name='" + name + '\'' +
-            ", close=" + status +
+            ", status=" + status +
             ", author='" + author + '\'' +
-            ", label='" + label + '\'' +
+            ", label=" + label +
             ", assignee='" + assignee + '\'' +
             ", lifetime=" + lifetime +
             '}';
@@ -182,8 +184,8 @@ public class IssueManager {
   }
 
   //Фильтрация Issue по заданной метке
-  public Collection<Issue> filterByLabel(String label) {
-    return filterBy(issue -> issue.getLabel().contains(label));
+  public Collection<Issue> filterByLabel(Collection<String> label) {
+    return filterBy(issue -> issue.getLabel().containsAll(label));
   }
 
   //Фильтрация Issue по заданному адресату
@@ -200,14 +202,15 @@ public class IssueManager {
 
   //Открытие или закрытие Issue по заданному id
   public void closingAndOpeningIssueById(int id) {
-    if (repository.findById(id) == null) {
+    Issue tmp = repository.findById(id);
+    if (tmp == null) {
       throw new NotFoundException("Element with id: " + id + " not found");
     }
-    if (repository.findById(id).isStatus()) {
-      repository.findById(id).setStatus(false);
-    } else {
-      repository.findById(id).setStatus(true);
-    }
+      if (tmp.isStatus()) {
+        repository.findById(id).setStatus(false);
+      } else {
+        repository.findById(id).setStatus(true);
+      }
   }
 }
 ```
@@ -280,6 +283,7 @@ import ru.netology.domain.OldestComparator;
 import ru.netology.repository.IssueRepository;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -324,7 +328,7 @@ public class IssueManagerTest {
         @Test   //Тест на отображения Issue по Label при отсутсвии найденных элементов
         public void shouldFilterByLabelWithNotFoundValue() {
             List<Issue> expected = List.of();
-            List<Issue> actual = (List<Issue>) issueManager.filterByLabel("build");
+            List<Issue> actual = (List<Issue>) issueManager.filterByLabel(Set.of("build"));
 
             assertEquals(expected, actual, "Отображение Issue по Label при отсутсвии найденных элементов");
         }
@@ -352,7 +356,7 @@ public class IssueManagerTest {
         private final IssueManager issueManager = new IssueManager(repository);
 
         private final Issue zero = new Issue(2775, "apiguardian-api version mismatch between source code and published POM", false,
-                "e-ts", "theme: build",
+                "e-ts", Set.of("theme: build"),
                 "No one assigned", 54_720);
 
         @BeforeEach
@@ -406,7 +410,7 @@ public class IssueManagerTest {
         @Test   //Тест на отображения Issue по Label при отсутсвии найденных элементов
         public void shouldFilterByLabelWithSingleValue() {
             List<Issue> expected = List.of(zero);
-            List<Issue> actual = (List<Issue>) issueManager.filterByLabel("build");
+            List<Issue> actual = (List<Issue>) issueManager.filterByLabel(Set.of("theme: build"));
 
             assertEquals(expected, actual, "Отображение Issue по Label при одном найденном элементе");
         }
@@ -428,34 +432,34 @@ public class IssueManagerTest {
         private final OldestComparator comparator = new OldestComparator();
 
         private final Issue zero = new Issue(2789, "List observable test engines and show their properties", true,
-                "sormuras", "component: Platform, type: new feature",
+                "sormuras", Set.of("component: Platform", "type: new feature"),
                 "sormuras", 11520);
         private final Issue first = new Issue(2788, "Make console launcher --classpath argument parser work like java's when referring to a jar directory", true,
-                "mbucc", "component: Platform, status: waiting-for-feedback, theme: documentation, type: new feature",
+                "mbucc", Set.of("component: Platform", "status: waiting-for-feedback", "theme: documentation", "type: new feature"),
                 "No one assigned", 15_840);
         private final Issue second = new Issue(2787, "Extend ParallelExecutionConfiguration to specify a predicate for determing if a pool is saturated", true,
-                "klease", "component: Platform, status: in progress, type: enhancement",
+                "klease", Set.of("component: Platform", "status: in progress", "type: enhancement"),
                 "klease", 15_880);
         private final Issue third = new Issue(2779, "[reflection] ReflectionSupport to return Streams", true,
-                "kriegfrj", "component: Jupiter, component: Platform, status: in progress, theme: extensions, theme: programming model, type: enhancement",
+                "kriegfrj", Set.of("component: Jupiter", "component: Platform", "status: in progress", "theme: extensions", "theme: programming model", "type: enhancement"),
                 "Attyuttam", 48_960);
         private final Issue fourth = new Issue(2778, "Using a single aggregator on the method level", false,
-                "akruijff", "component: Jupiter, status: declined, theme: parameterized tests, theme: programming model",
+                "akruijff", Set.of("component: Jupiter", "status: declined", "theme: parameterized tests", "theme: programming model"),
                 "No one assigned", 38_880);
         private final Issue fifth = new Issue(2775, "apiguardian-api version mismatch between source code and published POM", false,
-                "e-ts", "theme: build",
+                "e-ts", Set.of("theme: build"),
                 "No one assigned", 54_720);
         private final Issue sixth = new Issue(2774, "[FR] Mark tests preconditions / dependencies", false,
-                "Hu1buerger", "component: Jupiter, status: duplicate, theme: programming model",
+                "Hu1buerger", Set.of("component: Jupiter", "status: duplicate", "theme: programming model"),
                 "No one assigned", 56_160);
         private final Issue seventh = new Issue(2772, "Overview of shadowed dependencies in standalone JAR", false,
-                "sormuras", "component: Platform, theme: documentation",
+                "sormuras", Set.of("component: Platform", "theme: documentation"),
                 "marcphilipp", 57_600);
         private final Issue eighth = new Issue(2771, "Support Kotlin top level functions as test methods", true,
-                "mmerdes", "component: Jupiter, component: Kotlin, theme: programming model",
+                "mmerdes", Set.of("component: Jupiter", "component: Kotlin, theme: programming model"),
                 "mmerdes", 62_640);
         private final Issue ninth = new Issue(2764, "Fix intermittent module-path ordering issue in MultiReleaseJarTests.checkDefault", false,
-                "marcphilipp", "3rd-party: Maven Surefire, status: new, type: task",
+                "marcphilipp", Set.of("3rd-party: Maven Surefire", "status: new, type: task"),
                 "sormuras", 64_800);
 
         @BeforeEach
@@ -529,7 +533,7 @@ public class IssueManagerTest {
         @Test   //Тест фильтрации Issue по label при сортировке newest
         public void shouldFilterByLabelWithCompareTo() {
             List<Issue> expected = List.of(zero, first, second, third, seventh);
-            List<Issue> actual = (List<Issue>) issueManager.filterByLabel("Platform");
+            List<Issue> actual = (List<Issue>) issueManager.filterByLabel(Set.of("component: Platform"));
             issueManager.sortBy(actual, Issue::compareTo);
 
             assertEquals(expected, actual, "Фильтрация Issue по label при сортировке newest");
@@ -538,7 +542,7 @@ public class IssueManagerTest {
         @Test   //Тест фильтрации Issue по label при сортировке oldest
         public void shouldFilterByLabelWithComparator() {
             List<Issue> expected = List.of(seventh, third, second, first, zero);
-            List<Issue> actual = (List<Issue>) issueManager.filterByLabel("Platform");
+            List<Issue> actual = (List<Issue>) issueManager.filterByLabel(Set.of("component: Platform"));
             issueManager.sortBy(actual, comparator);
 
             assertEquals(expected, actual, "Фильтрация Issue по label при сортировке oldest");

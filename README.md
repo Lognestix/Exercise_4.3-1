@@ -23,7 +23,7 @@
 	- открыть терминал
 	- ввести команду 
 		```
-		https://github.com/Lognestix/Exercise_4.3-1
+		git clone https://github.com/Lognestix/Exercise_4.3-1
 		```
 1. Открыть склонированный проект в Intellij IDEA
 1. Запустить авто-тесты (Shift+F10)
